@@ -3,32 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的网页</title>
+    <title>我的产品网站</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 1000px;
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+
+        .nav {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-links a {
+            margin-left: 2rem;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 6rem 2rem;
+            background: #f8f9fa;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .features {
+            padding: 4rem 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
             margin: 0 auto;
         }
-        header {
-            background-color: #15512c;
-            padding: 30px;
+
+        .feature-card {
+            padding: 2rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .testimonials {
             text-align: center;
+            padding: 40px 0;
+        }
+
+        .rainbow-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 40px;
+            background: linear-gradient(
+                to right,
+                #ff0000,
+                #ff8000,
+                #ffff00,
+                #00ff00,
+                #0000ff,
+                #4b0082,
+                #9400d3
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow 8s linear infinite;
+        }
+
+        .testimonials-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .testimonials-section {
+            height: 400px;
+            width: 300px;
+            overflow: hidden;
+        }
+
+        .testimonial-track {
+            display: flex;
+            flex-direction: column;
+            animation: scrollVertical 20s linear infinite;
+        }
+
+        .track-reverse {
+            animation-direction: reverse;
+        }
+
+        .track-fast {
+            animation-duration: 15s;
+        }
+
+        .track-faster-reverse {
+            animation-duration: 12s;
+            animation-direction: reverse;
+        }
+
+        .testimonial-card {
+            flex: 0 0 auto;
+            margin: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        @keyframes scrollVertical {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-50%);
+            }
+        }
+
+        .testimonial-track:hover {
+            animation-play-state: paused;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        @keyframes rainbow {
+            0% {
+                filter: hue-rotate(0deg);
+            }
+            100% {
+                filter: hue-rotate(360deg);
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>欢迎来到我的网页</h1>
-        </header>
-        <main>
-            <p>这是我的第一个网页内容。</p>
-        </main>
-    </div>
+    <nav class="nav">
+        <div class="logo">
+            <h2>产品名称</h2>
+        </div>
+        <div class="nav-links">
+            <a href="#features">功能</a>
+            <a href="#pricing">价格</a>
+            <a href="#about">关于</a>
+            <a href="#download" class="cta-button">立即下载</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>你的产品标语</h1>
+        <p>简短的产品描述，突出主要优势和价值主张</p>
+        <a href="#download" class="cta-button">免费下载</a>
+    </section>
+
+    <section class="features" id="features">
+        <div class="feature-card">
+            <h3>核心功能 1</h3>
+            <p>详细描述这个功能如何帮助用户解决问题</p>
+        </div>
+        <div class="feature-card">
+            <h3>核心功能 2</h3>
+            <p>详细描述这个功能如何帮助用户解决问题</p>
+        </div>
+        <div class="feature-card">
+            <h3>核心功能 3</h3>
+            <p>详细描述这个功能如何帮助用户解决问题</p>
+        </div>
+    </section>
+
+    <section class="testimonials">
+        <h2 class="rainbow-title">Loved by world-class devs</h2>
+        
+        <div class="testimonials-container">
+            <!-- 第一列 -->
+            <div class="testimonials-section">
+                <div class="testimonial-track">
+                    <div class="testimonial-card">
+                        <p>"这是一个令人惊叹的开发工具！"</p>
+                        <div class="user-info">
+                            <img src="./images/1.png" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>张三</strong>
+                                <div>资深开发者</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <p>"非常好用的编程助手！"</p>
+                        <div class="user-info">
+                            <img src="./images/1.png" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>李四</strong>
+                                <div>全栈工程师</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二列 -->
+            <div class="testimonials-section">
+                <div class="testimonial-track track-reverse">
+                    <div class="testimonial-card">
+                        <p>"AI 功能非常强大！"</p>
+                        <div class="user-info">
+                            <img src="./images/2.png" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>王五</strong>
+                                <div>技术主管</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <p>"代码提示很智能！"</p>
+                        <div class="user-info">
+                            <img src="./images/2.png" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>赵六</strong>
+                                <div>软件工程师</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第三列 -->
+            <div class="testimonials-section">
+                <div class="testimonial-track track-fast">
+                    <div class="testimonial-card">
+                        <p>"提高了我的开发效率！"</p>
+                        <div class="user-info">
+                            <img src="./images/3.png" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>孙七</strong>
+                                <div>前端开发</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <p>"界面设计很友好！"</p>
+                        <div class="user-info">
+                            <img src="./images/3.png" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>周八</strong>
+                                <div>UI设计师</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第四列 -->
+            <div class="testimonials-section">
+                <div class="testimonial-track track-faster-reverse">
+                    <div class="testimonial-card">
+                        <p>"代码补全功能太棒了！"</p>
+                        <div class="user-info">
+                            <img src="./images/4.jpg" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>吴九</strong>
+                                <div>后端开发</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <p>"让编程变得更简单！"</p>
+                        <div class="user-info">
+                            <img src="./images/4.jpg" class="user-avatar" alt="用户头像">
+                            <div>
+                                <strong>郑十</strong>
+                                <div>系统架构师</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // 克隆每列的内容以实现无缝滚动
+        document.querySelectorAll('.testimonial-track').forEach(track => {
+            track.innerHTML += track.innerHTML;
+        });
+    </script>
 </body>
-</html> 
+</html>
