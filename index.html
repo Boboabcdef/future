@@ -175,6 +175,72 @@
                 filter: hue-rotate(360deg);
             }
         }
+
+        .chat-section {
+            padding: 4rem 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .chat-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            background: #f0f0f0;
+            margin-right: auto;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .chat-input textarea {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+            resize: none;
+            height: 40px;
+        }
+
+        .chat-input button {
+            padding: 0 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -208,6 +274,17 @@
         <div class="feature-card">
             <h3>核心功能 3</h3>
             <p>详细描述这个功能如何帮助用户解决问题</p>
+        </div>
+    </section>
+
+    <section class="chat-section" id="chat">
+        <h2>AI 助手</h2>
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <textarea id="userInput" placeholder="输入您的问题..."></textarea>
+                <button onclick="sendMessage()" id="sendButton">发送</button>
+            </div>
         </div>
     </section>
 
@@ -325,6 +402,103 @@
         // 克隆每列的内容以实现无缝滚动
         document.querySelectorAll('.testimonial-track').forEach(track => {
             track.innerHTML += track.innerHTML;
+        });
+
+        // 可以添加access_token缓存机制
+        let accessToken = null;
+        let tokenExpireTime = 0;
+
+        async function getAccessToken() {
+            const now = Date.now();
+            if (accessToken && tokenExpireTime > now) {
+                return accessToken;
+            }
+
+            const response = await fetch(`https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${API_KEY}&client_secret=${SECRET_KEY}`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            accessToken = data.access_token;
+            tokenExpireTime = now + (data.expires_in * 1000);
+            return accessToken;
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const messagesContainer = document.getElementById('chatMessages');
+            const sendButton = document.getElementById('sendButton');
+            
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // 添加用户消息
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'message user-message';
+            userMessageDiv.textContent = message;
+            messagesContainer.appendChild(userMessageDiv);
+
+            // 清空输入框并禁用发送按钮
+            userInput.value = '';
+            sendButton.disabled = true;
+
+            // 百度API配置
+            const API_KEY = "iCSwD8g0yUfSO2kLjdHxDAB2";
+            const SECRET_KEY = "gEcWnkQvOdxSbm9w9JSoKLBLWaEBX3xK";
+            
+            try {
+                console.log('开始发送请求...');
+                const tokenUrl = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${API_KEY}&client_secret=${SECRET_KEY}`;
+                console.log('请求URL:', tokenUrl);
+                
+                const tokenResponse = await fetch(tokenUrl, {
+                    method: 'POST'
+                });
+                
+                console.log('服务器响应状态:', tokenResponse.status);
+                const tokenData = await tokenResponse.json();
+                console.log('服务器响应数据:', tokenData);
+                
+            } catch (error) {
+                console.error('完整错误信息:', {
+                    message: error.message,
+                    name: error.name,
+                    stack: error.stack
+                });
+            }
+
+            // 调用文心一言API
+            const response = await fetch(`https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?access_token=${access_token}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    messages: [{
+                        role: "user",
+                        content: message
+                    }]
+                })
+            });
+
+            const data = await response.json();
+            
+            // 添加AI回复
+            const aiMessageDiv = document.createElement('div');
+            aiMessageDiv.className = 'message ai-message';
+            aiMessageDiv.textContent = data.result;  // 百度API返回的是 result 字段
+            messagesContainer.appendChild(aiMessageDiv);
+
+            // 滚动到底部
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 添加回车发送功能
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         });
     </script>
 </body>
