@@ -458,17 +458,29 @@
                 userInput.value = '';
                 sendButton.disabled = true;
 
-                // 发送请求到Python服务器
-                const response = await fetch('http://localhost:5000/api/chat', {
+                // 根据环境选择 API 地址
+                const isLocalhost = window.location.hostname === 'localhost' || 
+                                  window.location.hostname === '127.0.0.1';
+                const API_URL = isLocalhost ? 'http://localhost:5000' : 'https://future-ee44.onrender.com';
+
+                console.log('发送请求到:', `${API_URL}/api/chat`);  // 添加日志
+                
+                const response = await fetch(`${API_URL}/api/chat`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ message: message })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
-                
+                console.log('收到响应:', data);  // 添加日志
+
                 // 显示AI回复
                 const aiMessageDiv = document.createElement('div');
                 aiMessageDiv.className = 'message ai-message';
@@ -476,7 +488,7 @@
                 messagesContainer.appendChild(aiMessageDiv);
 
             } catch (error) {
-                console.error('错误:', error);
+                console.error('错误详情:', error);
                 alert('发送失败: ' + error.message);
             } finally {
                 sendButton.disabled = false;

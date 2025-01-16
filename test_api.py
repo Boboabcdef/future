@@ -8,10 +8,6 @@ CORS(app)
 API_KEY = "iCSwD8g0yUfSO2kLjdHxDAB2"
 SECRET_KEY = "gEcWnkQvOdxSbm9w9JSoKLBLWaEBX3xK"
 
-@app.route('/')
-def home():
-    return 'API is running'
-
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
@@ -45,4 +41,4 @@ def chat():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    app.run(debug=True, port=5000)
