@@ -461,9 +461,9 @@
                 // 根据环境选择 API 地址
                 const isLocalhost = window.location.hostname === 'localhost' || 
                                   window.location.hostname === '127.0.0.1';
-                const API_URL = isLocalhost ? 'http://localhost:5000' : 'https://future-ee44.onrender.com';
+                const API_URL = isLocalhost ? 'http://localhost:5000' : 'https://future-qk70.onrender.com';
 
-                console.log('发送请求到:', `${API_URL}/api/chat`);  // 添加日志
+                console.log('当前 API 地址:', API_URL);  // 添加日志以便调试
                 
                 const response = await fetch(`${API_URL}/api/chat`, {
                     method: 'POST',
