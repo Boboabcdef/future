@@ -246,6 +246,38 @@
         #sendButton:disabled {
             background: #cccccc;
         }
+
+        @media screen and (max-width: 768px) {
+            .testimonials-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            
+            .testimonials-section {
+                width: 90%;
+                max-width: 300px;
+                height: 350px;
+            }
+
+            .testimonial-card {
+                font-size: 0.875rem;
+                padding: 15px;
+            }
+
+            .testimonial-card p {
+                line-height: 1.4;
+            }
+
+            .user-info {
+                font-size: 0.8125rem;
+            }
+
+            .rainbow-title {
+                font-size: 1.75rem;
+                padding: 0 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -461,15 +493,12 @@
                 // 根据环境选择 API 地址
                 const isLocalhost = window.location.hostname === 'localhost' || 
                                   window.location.hostname === '127.0.0.1';
-                const API_URL = isLocalhost ? 'http://localhost:5000' : 'https://future-qk70.onrender.com';
-
-                console.log('当前 API 地址:', API_URL);  // 添加日志以便调试
+                const API_URL = isLocalhost ? 'http://localhost:5000' : 'https://your-production-url.com';
                 
                 const response = await fetch(`${API_URL}/api/chat`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ message: message })
                 });
@@ -479,17 +508,22 @@
                 }
 
                 const data = await response.json();
-                console.log('收到响应:', data);  // 添加日志
-
+                
                 // 显示AI回复
                 const aiMessageDiv = document.createElement('div');
                 aiMessageDiv.className = 'message ai-message';
-                aiMessageDiv.textContent = data.result;
+                // 根据智普AI的返回格式获取回复内容
+                const aiResponse = data.data?.choices?.[0]?.content || data.response || '抱歉，我没有获取到正确的回复';
+                aiMessageDiv.textContent = aiResponse;
                 messagesContainer.appendChild(aiMessageDiv);
 
             } catch (error) {
                 console.error('错误详情:', error);
-                alert('发送失败: ' + error.message);
+                // 显示更友好的错误信息
+                const errorMessageDiv = document.createElement('div');
+                errorMessageDiv.className = 'message ai-message';
+                errorMessageDiv.textContent = '抱歉，发生了一些错误，请稍后再试。';
+                messagesContainer.appendChild(errorMessageDiv);
             } finally {
                 sendButton.disabled = false;
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;

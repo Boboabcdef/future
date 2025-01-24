@@ -6,40 +6,55 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-API_KEY = "iCSwD8g0yUfSO2kLjdHxDAB2"
-SECRET_KEY = "gEcWnkQvOdxSbm9w9JSoKLBLWaEBX3xK"
+API_KEY = "39b51c53b8fc459389a1de509524b7df.XZiGZkOeXRQuxNbR"
+API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
-        # 1. 获取 access_token
-        token_response = requests.post(
-            'https://aip.baidubce.com/oauth/2.0/token',
-            params={
-                'grant_type': 'client_credentials',
-                'client_id': API_KEY,
-                'client_secret': SECRET_KEY
-            }
-        )
-        access_token = token_response.json()['access_token']
-
-        # 2. 获取用户消息
         user_message = request.json.get('message', '')
         
-        # 3. 调用文心一言API
-        chat_response = requests.post(
-            f'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?access_token={access_token}',
-            json={
-                'messages': [{
-                    'role': 'user',
-                    'content': user_message
-                }]
-            }
+        payload = {
+            "model": "glm-4",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            ],
+            "stream": False
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.post(
+            API_URL,
+            headers=headers,
+            json=payload
         )
         
-        return jsonify(chat_response.json())
+        print("Status Code:", response.status_code)  # 调试信息
+        print("Response:", response.text)  # 调试信息
+        
+        if response.status_code == 200:
+            result = response.json()
+            ai_response = result['choices'][0]['message']['content']
+            return jsonify({'response': ai_response})
+        else:
+            return jsonify({
+                'error': f'API调用失败: {response.status_code}',
+                'details': response.text
+            }), 500
+            
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error: {str(e)}")  # 调试信息
+        return jsonify({
+            'error': '服务器错误',
+            'details': str(e)
+        }), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
