@@ -436,63 +436,34 @@
     </section>
 
     <script>
-        // 克隆每列的内容以实现无缝滚动
-        document.querySelectorAll('.testimonial-track').forEach(track => {
-            track.innerHTML += track.innerHTML;
-        });
+        let conversationId = null;
+        let currentMessageDiv = null;
 
-        // 添加全局变量存储token
-        let accessToken = null;
-        let tokenExpireTime = 0;
-
-        // 获取token的函数
-        async function getAccessToken() {
-            const now = Date.now();
-            if (accessToken && tokenExpireTime > now) {
-                return accessToken;
-            }
-
-            try {
-                const response = await fetch('http://localhost:5000/api/token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-                accessToken = data.access_token;
-                tokenExpireTime = now + (data.expires_in * 1000);
-                return accessToken;
-            } catch (error) {
-                console.error('获取token失败:', error);
-                throw error;
-            }
+        function displayMessage(message, type) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = message;
+            messagesContainer.appendChild(messageDiv);
+            currentMessageDiv = type === 'ai' ? messageDiv : null;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // 发送消息的函数
         async function sendMessage() {
             const userInput = document.getElementById('userInput');
-            const messagesContainer = document.getElementById('chatMessages');
             const sendButton = document.getElementById('sendButton');
-            
             const message = userInput.value.trim();
+            
             if (!message) return;
+            
+            sendButton.disabled = true;
+            userInput.value = '';
+            displayMessage(message, 'user');
+            currentMessageDiv = null;  // 重置当前消息div
 
             try {
-                // 显示用户消息
-                const userMessageDiv = document.createElement('div');
-                userMessageDiv.className = 'message user-message';
-                userMessageDiv.textContent = message;
-                messagesContainer.appendChild(userMessageDiv);
-
-                // 清空输入并禁用按钮
-                userInput.value = '';
-                sendButton.disabled = true;
-
-                // 根据环境选择 API 地址
                 const isLocalhost = window.location.hostname === 'localhost' || 
-                                  window.location.hostname === '127.0.0.1';
+                                   window.location.hostname === '127.0.0.1';
                 const API_URL = isLocalhost ? 'http://localhost:5000' : 'https://future-qk70.onrender.com';
                 
                 const response = await fetch(`${API_URL}/api/chat`, {
@@ -500,52 +471,68 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: conversationId
+                    })
                 });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const data = await response.json();
-                
-                // 显示AI回复
-                const aiMessageDiv = document.createElement('div');
-                aiMessageDiv.className = 'message ai-message';
-                // 根据智普AI的返回格式获取回复内容
-                const aiResponse = data.data?.choices?.[0]?.content || data.response || '抱歉，我没有获取到正确的回复';
-                aiMessageDiv.textContent = aiResponse;
-                messagesContainer.appendChild(aiMessageDiv);
+                const reader = response.body.getReader();
+                let aiMessage = '';
 
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) break;
+                    
+                    const text = new TextDecoder().decode(value);
+                    const lines = text.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            try {
+                                const data = JSON.parse(line.slice(5));
+                                if (data.response) {
+                                    aiMessage = data.response;
+                                    displayMessage(aiMessage, 'ai');
+                                }
+                                if (data.conversation_id) {
+                                    conversationId = data.conversation_id;
+                                }
+                            } catch (e) {
+                                console.error('Error parsing SSE data:', e);
+                            }
+                        }
+                    }
+                }
             } catch (error) {
-                console.error('错误详情:', error);
-                // 显示更友好的错误信息
-                const errorMessageDiv = document.createElement('div');
-                errorMessageDiv.className = 'message ai-message';
-                errorMessageDiv.textContent = '抱歉，发生了一些错误，请稍后再试。';
-                messagesContainer.appendChild(errorMessageDiv);
+                console.error('Error:', error);
+                displayMessage('发生错误，请重试', 'ai');
             } finally {
                 sendButton.disabled = false;
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                currentMessageDiv = null;  // 重置当前消息div
             }
         }
 
-        // 添加回车发送功能
-        document.getElementById('userInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('页面已加载');
             const sendButton = document.getElementById('sendButton');
-            if (sendButton) {
-                sendButton.addEventListener('click', sendMessage);
-                console.log('事件监听器已添加');
-            }
+            const userInput = document.getElementById('userInput');
+
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // 克隆每列的内容以实现无缝滚动
+            document.querySelectorAll('.testimonial-track').forEach(track => {
+                track.innerHTML += track.innerHTML;
+            });
         });
     </script>
 </body>
