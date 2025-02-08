@@ -5,6 +5,11 @@ import os
 import json
 from cachetools import TTLCache
 import traceback
+import time
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 app = Flask(__name__)
 CORS(app)
@@ -19,6 +24,10 @@ APP_ID = "1880145051938672640"
 # 缓存配置
 variables_cache = TTLCache(maxsize=100, ttl=3600)  # 1小时缓存
 conversation_cache = TTLCache(maxsize=1000, ttl=7200)  # 2小时缓存
+session_cache = TTLCache(maxsize=1000, ttl=3600)  # 1小时缓存
+
+# 创建线程池
+executor = ThreadPoolExecutor(max_workers=10)
 
 def get_auth_header():
     return f"Bearer {API_KEY}"
@@ -34,7 +43,12 @@ def create_conversation():
         print(f"Creating conversation with URL: {url}")
         print(f"Headers: {headers}")
         
-        response = requests.post(url, headers=headers, timeout=10)
+        # 添加重试机制
+        session = requests.Session()
+        retries = Retry(total=3, backoff_factor=0.1)
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+        
+        response = session.post(url, headers=headers, timeout=8)
         print(f"Create conversation response: {response.text}")
         
         if response.status_code == 200:
@@ -48,6 +62,8 @@ def create_conversation():
         print(f"Error in create_conversation: {str(e)}")
         print(traceback.format_exc())
         return None
+    finally:
+        session.close()
 
 def get_cached_variables():
     """获取缓存的变量信息"""
@@ -85,15 +101,23 @@ def chat():
         if not user_message:
             return jsonify({'error': '消息不能为空'}), 400
 
+        # 使用缓存的会话ID
         if not conversation_id:
-            conversation_id = create_conversation()
-            if not conversation_id:
-                return jsonify({'error': '创建会话失败'}), 500
+            if 'default_session' in session_cache:
+                conversation_id = session_cache['default_session']
+            else:
+                conversation_id = create_conversation()
+                if conversation_id:
+                    session_cache['default_session'] = conversation_id
+                else:
+                    return jsonify({'error': '创建会话失败'}), 500
 
         request_url = f"{BASE_URL}/v2/application/generate_request_id"
         headers = {
             "Authorization": get_auth_header(),
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Connection": "keep-alive",
+            "Keep-Alive": "timeout=60"
         }
 
         payload = {
@@ -109,7 +133,16 @@ def chat():
 
         def generate():
             try:
-                response = requests.post(request_url, headers=headers, json=payload, timeout=10)
+                session = requests.Session()
+                retries = Retry(total=3, 
+                              backoff_factor=0.1,
+                              status_forcelist=[500, 502, 503, 504])
+                session.mount('https://', HTTPAdapter(max_retries=retries))
+                
+                response = session.post(request_url, 
+                                      headers=headers, 
+                                      json=payload, 
+                                      timeout=3)
                 
                 if response.status_code != 200:
                     error_msg = response.json().get('message', '请求失败')
@@ -121,40 +154,45 @@ def chat():
                 headers['Accept'] = 'text/event-stream'
 
                 full_response = ""
-                last_sent_length = 0
+                last_sent_time = time.time()
+                is_complete = False
                 
-                with requests.post(sse_url, headers=headers, stream=True) as response:
-                    for line in response.iter_lines():
-                        if line:
-                            line = line.decode('utf-8')
-                            if line.startswith('data:'):
-                                try:
-                                    data = json.loads(line[5:])
-                                    if 'msg' in data and data['msg']:
-                                        full_response += data['msg']
-                                        # 只有当新增内容达到一定长度或是最后一条消息时才发送
-                                        if len(full_response) >= last_sent_length + 10 or data.get('end', False):
-                                            yield f"data: {json.dumps({'response': full_response, 'conversation_id': conversation_id})}\n\n"
-                                            last_sent_length = len(full_response)
-                                except json.JSONDecodeError:
-                                    continue
-
-                # 确保发送最终的完整响应
-                if full_response and len(full_response) > last_sent_length:
-                    yield f"data: {json.dumps({'response': full_response, 'conversation_id': conversation_id})}\n\n"
+                try:
+                    with session.post(sse_url, headers=headers, stream=True, timeout=30) as response:
+                        for line in response.iter_lines():
+                            if line:
+                                line = line.decode('utf-8')
+                                if line.startswith('data:'):
+                                    try:
+                                        data = json.loads(line[5:])
+                                        if 'msg' in data and data['msg']:
+                                            full_response += data['msg']
+                                            current_time = time.time()
+                                            # 每20ms发送一次或收到结束标记
+                                            if (current_time - last_sent_time) >= 0.02 or data.get('end', False):
+                                                yield f"data: {json.dumps({'response': full_response, 'conversation_id': conversation_id})}\n\n"
+                                                last_sent_time = current_time
+                                                if data.get('end', False):
+                                                    is_complete = True
+                                    except json.JSONDecodeError:
+                                        continue
+                finally:
+                    # 确保发送完整的最终响应
+                    if full_response and not is_complete:
+                        yield f"data: {json.dumps({'response': full_response, 'conversation_id': conversation_id, 'end': True})}\n\n"
+                    session.close()
 
             except Exception as e:
                 print(f"Error in generate: {str(e)}")
+                print(traceback.format_exc())
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
         return Response(generate(), mimetype='text/event-stream')
 
     except Exception as e:
         print(f"Error in chat endpoint: {str(e)}")
-        return jsonify({
-            'error': '服务器错误',
-            'details': str(e)
-        }), 500
+        print(traceback.format_exc())
+        return jsonify({'error': '服务器错误', 'details': str(e)}), 500
 
 # 添加一个测试端点
 @app.route('/api/test', methods=['GET'])
