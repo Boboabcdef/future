@@ -121,7 +121,7 @@ def chat():
                 headers['Accept'] = 'text/event-stream'
 
                 full_response = ""
-                response_sent = False  # 添加标志来追踪是否已发送响应
+                last_sent_length = 0
                 
                 with requests.post(sse_url, headers=headers, stream=True) as response:
                     for line in response.iter_lines():
@@ -130,14 +130,17 @@ def chat():
                             if line.startswith('data:'):
                                 try:
                                     data = json.loads(line[5:])
-                                    if 'msg' in data and data['msg'] and not response_sent:
-                                        full_response = data['msg']
-                                        yield f"data: {json.dumps({'response': full_response, 'conversation_id': conversation_id})}\n\n"
-                                        response_sent = True  # 标记已发送响应
+                                    if 'msg' in data and data['msg']:
+                                        full_response += data['msg']
+                                        # 只有当新增内容达到一定长度或是最后一条消息时才发送
+                                        if len(full_response) >= last_sent_length + 10 or data.get('end', False):
+                                            yield f"data: {json.dumps({'response': full_response, 'conversation_id': conversation_id})}\n\n"
+                                            last_sent_length = len(full_response)
                                 except json.JSONDecodeError:
                                     continue
-                
-                if not response_sent:  # 如果还没有发送过响应
+
+                # 确保发送最终的完整响应
+                if full_response and len(full_response) > last_sent_length:
                     yield f"data: {json.dumps({'response': full_response, 'conversation_id': conversation_id})}\n\n"
 
             except Exception as e:

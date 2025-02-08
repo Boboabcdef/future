@@ -441,11 +441,20 @@
 
         function displayMessage(message, type) {
             const messagesContainer = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}-message`;
-            messageDiv.textContent = message;
-            messagesContainer.appendChild(messageDiv);
-            currentMessageDiv = type === 'ai' ? messageDiv : null;
+            
+            if (type === 'ai' && currentMessageDiv) {
+                // 更新现有的AI消息
+                currentMessageDiv.textContent = message;
+            } else {
+                // 创建新的消息div
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}-message`;
+                messageDiv.textContent = message;
+                messagesContainer.appendChild(messageDiv);
+                if (type === 'ai') {
+                    currentMessageDiv = messageDiv;
+                }
+            }
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
